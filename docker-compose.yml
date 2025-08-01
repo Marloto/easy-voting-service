@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  easy-voting-service:
+    build: .
+    container_name: easy-voting-service
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist voting data between container restarts
+      - voting_data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+
+volumes:
+  voting_data:
+    driver: local
