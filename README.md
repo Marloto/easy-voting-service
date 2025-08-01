@@ -2,38 +2,25 @@
 
 A secure, zero-knowledge voting system with client-side encryption and anonymous ballot submission. Perfect for polls, surveys, evaluations, and democratic decision-making processes.
 
+<div align="center">
+
 ![Configuration Interface](docs/images/config.png)
+<br>
+<sub>Configuration interface for questions (left) as well as subjects and keys (right)</sub>
 
-![Configuration Interface](docs/images/voting.png)
+---
 
-![Configuration Interface](docs/images/result.png)
+![Voting Interface](docs/images/voting.png)
+<br>
+<sub>Voting interface, add votes per subject</sub>
 
-## Features
+---
 
-### 🔒 Privacy & Security
-- **Zero-knowledge architecture** - Server never sees unencrypted votes
-- **Client-side encryption** using Web Crypto API
-- **Anonymous voting** with unique voter keys
-- **Session isolation** with SHA-256 hashed storage
+![Results Display](docs/images/result.png)
+<br>
+<sub>Results display, review voting results per subject</sub>
 
-### 📊 Flexible Voting Options
-- **Multiple question types**: Rating scales, Yes/No, Text responses
-- **Organized groups** for complex questionnaires
-- **Multiple subjects** evaluation (candidates, proposals, etc.)
-- **Single or group voting** modes per voter key
-
-### 🎯 Easy Management
-- **Intuitive configuration** interface with drag-and-drop
-- **QR code generation** for easy voter access
-- **Real-time results** with visual charts
-- **Export/Import** complete sessions with voting data
-- **Print-friendly** voter key distribution
-
-### 🌐 Zero Setup Deployment
-- No database required - file-based storage
-- Self-contained web application
-- Mobile-responsive design
-- Works offline after initial load
+</div>
 
 ## Quick Start
 
