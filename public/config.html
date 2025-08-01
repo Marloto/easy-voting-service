@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .session-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .key-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .sortable-list {
+            min-height: 100px;
+        }
+        .sortable-item {
+            margin-bottom: 0.5rem;
+            cursor: move;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        .sortable-item:hover {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .sortable-item.sortable-chosen {
+            opacity: 0.8;
+        }
+        .sortable-item.sortable-ghost {
+            opacity: 0.4;
+            background-color: #f8f9fa;
+        }
+        .group-item {
+            background: #ffffff;
+            border-left: 4px solid #2196f3;
+        }
+        .question-item {
+            background: #ffffff;
+            border-left: 4px solid #4caf50;
+        }
+        .drag-handle {
+            cursor: grab;
+            color: #6c757d;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .voter-key-protected {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .voter-key-protected:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .blur-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.5);
+            z-index: 1050;
+        }
+        .qr-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 0 50px rgba(0,0,0,0.3);
+            z-index: 1051;
+            max-width: 90vw;
+            max-height: 90vh;
+            text-align: center;
+        }
+        #qrCodeDisplay {
+            margin: 1rem 0;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 280px;
+        }
+        .drag-drop-zone {
+            position: relative;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .drag-drop-zone.drag-over {
+            border-color: #0d6efd !important;
+            border-width: 2px !important;
+            border-style: solid !important;
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+        }
+        .drag-drop-overlay {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 2px dashed #0d6efd;
+            border-radius: calc(0.375rem - 2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #0d6efd;
+            font-size: 1.1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+        .drag-drop-zone.drag-over .drag-drop-overlay {
+            opacity: 1;
+        }
+        .drag-drop-zone:hover:not(.drag-over) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Phase 1: Session Setup -->
+        <div id="phase1" class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header text-center">
+                        <h3>Create or Load Voting Configuration</h3>
+                    </div>
+                    <div class="card-body text-center p-5">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body d-flex flex-column">
+                                        <i class="bi bi-file-plus text-primary mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="card-title">Create New Poll</h5>
+                                        <p class="card-text text-muted flex-grow-1">Start fresh with a new voting session</p>
+                                        <button class="btn btn-primary btn-lg" id="createNewBtn">
+                                            Create New
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 border-secondary drag-drop-zone" id="uploadDropZone">
+                                    <div class="card-body d-flex flex-column">
+                                        <i class="bi bi-upload text-secondary mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="card-title">Upload Configuration</h5>
+                                        <p class="card-text text-muted flex-grow-1">Continue with a previously saved config file<br>
+                                        <small>Drag & drop JSON file here or click to browse</small></p>
+                                        <input type="file" class="form-control d-none" id="configFileInput" accept=".json">
+                                        <button class="btn btn-secondary btn-lg" id="uploadConfigBtn">
+                                            Upload Config
+                                        </button>
+                                    </div>
+                                    <div class="drag-drop-overlay">
+                                        <div>
+                                            <i class="bi bi-file-earmark-arrow-down" style="font-size: 2rem;"></i>
+                                            <div class="mt-2">Drop JSON file here</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phase 2: Poll Configuration Interface (hidden initially) -->
+        <div id="phase2" class="d-none fade-in">
+            <!-- Poll Info Header -->
+            <div class="session-info">
+                <div class="row align-items-center">
+                    <div class="col-10 col-md-8">
+                        <h4 id="pollTitleDisplay" class="mb-1">
+                            Untitled Poll
+                            <button class="btn btn-link p-0 ms-2" id="editPollInfoBtn" style="color: rgba(255,255,255,0.7);">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        </h4>
+                        <p id="pollDescriptionDisplay" class="mb-0 opacity-75">Click pencil to edit poll information</p>
+                    </div>
+                    <div class="col-2 col-md-4 text-end">
+                        <button class="btn btn-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#sessionDetails">
+                            <i class="bi bi-info-circle"></i>
+                            <span class="d-none d-lg-inline">Session Details</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Session Details -->
+                <div class="collapse mt-3" id="sessionDetails">
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-qr-code"></i> Session ID</h6>
+                                <div class="key-display" id="displaySessionId"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-key"></i> Master Key</h6>
+                                <div class="key-display" id="displayMasterKey"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Management Buttons -->
+                <div class="mt-3">
+                    <div class="btn-group me-2" role="group">
+                        <button class="btn btn-outline-light btn-sm" id="showQRCodeBtn">
+                            <i class="bi bi-qr-code"></i>
+                            <span class="d-none d-lg-inline"> QR Code</span>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="printVotersBtn">
+                            <i class="bi bi-printer"></i>
+                            <span class="d-none d-lg-inline"> Print Voters</span>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="showResultsBtn">
+                            <i class="bi bi-bar-chart-fill"></i>
+                            <span class="d-none d-lg-inline"> Show Results</span>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="exportConfigBtn">
+                            <i class="bi bi-download"></i>
+                            <span class="d-none d-lg-inline"> Export</span>
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" id="clearDataBtn">
+                            <i class="bi bi-trash"></i>
+                            <span class="d-none d-lg-inline"> Clear Data</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+
+            <div class="row">
+                <!-- Poll Groups Section -->
+                <div class="col-lg-8">
+                    <div class="card shadow mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-list-check"></i> Poll Groups & Questions</h5>
+                            <i class="bi bi-info-circle text-muted" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="left" 
+                               title="Create groups to organize your questions, then add rating, yes/no, or text questions to each group. Drag and drop to reorder."></i>
+                        </div>
+                        <div class="card-body">
+                            <div id="sortableList" class="sortable-list">
+                                <!-- Drag & drop items will be added here dynamically -->
+                            </div>
+                            <div id="emptyListMessage" class="text-center text-muted py-4">
+                                <i>No questions or groups yet. Click the buttons below to start creating your poll.</i>
+                            </div>
+                            <div class="text-center mt-3">
+                                <div class="btn-group w-100">
+                                    <button class="btn btn-outline-primary w-50" id="addGroupBtn">
+                                        Add Group
+                                    </button>
+                                    <button class="btn btn-outline-success w-50" id="addQuestionBtn">
+                                        Add Question
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Subjects Section -->
+                    <div class="card shadow mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-people"></i> Subjects</h5>
+                            <i class="bi bi-info-circle text-muted" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="left" 
+                               title="Add the people, items, or candidates that will be evaluated using your questions. Each subject gets its own voting page."></i>
+                        </div>
+                        <div class="card-body">
+                            <div id="subjectsList">
+                                <!-- Subjects will be added here dynamically -->
+                            </div>
+                            <div id="emptySubjectsMessage" class="text-center text-muted py-3">
+                                <small><i>No subjects added yet.</i></small>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-secondary w-100" id="addSubjectBtnSidebar">
+                                    Add Subject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Voter IDs Section -->
+                    <div class="card shadow mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-person-badge"></i> Voter IDs</h5>
+                            <i class="bi bi-info-circle text-muted" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="left" 
+                               title="Generate unique 5-character voter keys. 'Single' voters should be handed to one person, 'Group' voters allow multiple people to use the same key. Keys are case-insensitive."></i>
+                        </div>
+                        <div class="card-body">
+                            <div id="votersList">
+                                <!-- Voter IDs will be added here dynamically -->
+                            </div>
+                            <div id="emptyVotersMessage" class="text-center text-muted py-3">
+                                <small><i>No voters added yet.</i></small>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-secondary w-100" id="addVoterBtn">
+                                    Add Voter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="text-center d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Bottom Toast Notifications -->
+    <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <!-- Toasts will be dynamically added here -->
+    </div>
+
+    <!-- Poll Information Modal -->
+    <div class="modal fade" id="pollInfoModal" tabindex="-1" aria-labelledby="pollInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pollInfoModalLabel">
+                        <i class="bi bi-info-circle"></i> Poll Information
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="pollTitleInputModal" 
+                               placeholder="Enter poll title" maxlength="100">
+                        <label for="pollTitleInputModal">Poll Title</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <textarea class="form-control" id="pollDescriptionInputModal" 
+                                  placeholder="Enter poll description" style="height: 100px;" maxlength="500"></textarea>
+                        <label for="pollDescriptionInputModal">Poll Description (optional)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="savePollInfoBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Editing Modal -->
+    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="questionModalLabel"><i class="bi bi-pencil-square"></i> Edit Questions for Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="groupTitleInput" class="form-label">Group Name:</label>
+                        <input type="text" class="form-control" id="groupTitleInput" placeholder="Enter group name">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label mb-0">Questions:</label>
+                            <button type="button" class="btn btn-primary btn-sm" id="addQuestionBtn">
+                                <i class="bi bi-plus-circle"></i> Add Question
+                            </button>
+                        </div>
+                        <div id="questionsList">
+                            <!-- Questions will be added here dynamically -->
+                        </div>
+                        <div id="emptyQuestionsMessage" class="text-center text-muted py-3">
+                            <small><i>No questions yet. Click "Add Question" to start.</i></small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subjectsInput" class="form-label">Subjects/Candidates:</label>
+                        <textarea class="form-control" id="subjectsInput" rows="3" 
+                                  placeholder="Enter subjects to be evaluated, one per line (e.g., John Doe, Jane Smith)"></textarea>
+                        <div class="form-text">These are the people/items that will be rated using the questions above</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveQuestionsBtn">Save Questions</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Subject Management Modal -->
+    <div class="modal fade" id="subjectModal" tabindex="-1" aria-labelledby="subjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subjectModalLabel"><i class="bi bi-people"></i> Manage Subjects</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newSubjectInput" class="form-label">Add New Subject:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newSubjectInput" placeholder="Enter subject name">
+                            <button class="btn btn-primary" type="button" id="addSubjectBtn">Add</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Current Subjects:</label>
+                        <div id="currentSubjectsList">
+                            <!-- Current subjects will be listed here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationModalLabel">
+                        <i class="bi bi-question-circle"></i> Confirm Action
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmationMessage">Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmActionBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Configuration Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportModalLabel">
+                        <i class="bi bi-download"></i> Export Configuration
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Select what you want to include in the export:</p>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportQuestions" checked>
+                        <label class="form-check-label" for="exportQuestions">
+                            <strong>Questions & Groups Structure</strong>
+                            <br><small class="text-muted">Poll questions and their organization (for reuse in new sessions)</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportSubjects">
+                        <label class="form-check-label" for="exportSubjects">
+                            <strong>Subjects/Candidates</strong>
+                            <br><small class="text-muted">People or items being evaluated</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportVoters">
+                        <label class="form-check-label" for="exportVoters">
+                            <strong>Voter Configuration</strong>
+                            <br><small class="text-muted">Voter keys and types</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportSession">
+                        <label class="form-check-label" for="exportSession">
+                            <strong>Session Data</strong>
+                            <br><small class="text-muted">Session ID and master key (full backup/restore)</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportSettings">
+                        <label class="form-check-label" for="exportSettings">
+                            <strong>Poll Settings</strong>
+                            <br><small class="text-muted">Title, description, and configuration metadata</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="exportVotes">
+                        <label class="form-check-label" for="exportVotes">
+                            <strong>Voting Data</strong>
+                            <br><small class="text-muted">All submitted votes for results recreation</small>
+                        </label>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="exportAll">
+                        <label class="form-check-label" for="exportAll">
+                            <strong>Select All (Complete Session Backup)</strong>
+                            <br><small class="text-muted">Include everything for full session restoration</small>
+                        </label>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label for="exportFilename" class="form-label">Filename:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="exportFilename" value="voting-config">
+                            <span class="input-group-text">.json</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="performExportBtn">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Clear Data Modal -->
+    <div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clearDataModalLabel">
+                        <i class="bi bi-trash"></i> Clear Data Options
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-4">Choose how you want to clear your voting data:</p>
+                    
+                    <div class="d-grid gap-3">
+                        <!-- Local Clear Option -->
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-device-ssd text-warning"></i> Clear Local Data Only
+                                </h6>
+                                <p class="card-text small text-muted mb-3">
+                                    Clear local browser data and return to start screen. Server data remains intact.
+                                </p>
+                                <button class="btn btn-warning btn-sm w-100" id="clearLocalBtn">
+                                    <i class="bi bi-device-ssd"></i> Clear Local Only
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Export & Clear Option -->
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-archive text-info"></i> Export & Clear All
+                                </h6>
+                                <p class="card-text small text-muted mb-3">
+                                    Export complete session (config + votes) to file, then clear all data locally and on server.
+                                </p>
+                                <button class="btn btn-info btn-sm w-100" id="exportAndClearBtn">
+                                    <i class="bi bi-archive"></i> Export & Clear All
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Full Clear Option -->
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-exclamation-triangle text-danger"></i> Clear All Data
+                                </h6>
+                                <p class="card-text small text-muted mb-3">
+                                    Permanently delete all data locally and on server. <strong>This cannot be undone!</strong>
+                                </p>
+                                <button class="btn btn-danger btn-sm w-100" id="clearAllBtn">
+                                    <i class="bi bi-trash-fill"></i> Clear All Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrBackdrop" class="blur-backdrop d-none"></div>
+    <div id="qrModal" class="qr-modal d-none">
+        <div class="mb-3">
+            <h4>Voting Link QR Code</h4>
+            <p class="text-muted">Scan this QR code to access the voting interface</p>
+        </div>
+        <div id="qrCodeDisplay"></div>
+        <div class="mb-3">
+            <small class="text-muted d-block">Or copy link:</small>
+            <div class="input-group">
+                <input type="text" class="form-control" id="votingLinkInput" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="copyLinkBtn">
+                    <i class="bi bi-clipboard"></i> Copy
+                </button>
+            </div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="closeQRModal">Close</button>
+    </div>
+    
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/Sortable.min.js"></script>
+    <script src="js/qrcode.min.js"></script>
+    <script src="js/crypto-utils.js"></script>
+    <script src="js/config-state-manager.js"></script>
+    <script src="js/config-app.js"></script>
+</body>
+</html>

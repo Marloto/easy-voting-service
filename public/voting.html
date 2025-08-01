@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .voting-header {
+            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .subject-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+        }
+        .subject-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+        .subject-card.voted {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+        .subject-card.voted:hover {
+            border-color: #28a745;
+        }
+        .voter-info {
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+        .question-group {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .group-title {
+            color: #495057;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+        }
+        .rating-scale {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        .rating-option {
+            flex: 1;
+            text-align: center;
+            margin: 0 2px;
+        }
+        .rating-option input[type="radio"] {
+            margin-bottom: 0.25rem;
+        }
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div id="loadingOverlay" class="loading-overlay d-none">
+            <div class="text-center text-white">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-2">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Phase 1: Voter Authentication -->
+        <div id="authPhase" class="fade-in">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header text-center">
+                            <h3 class="mb-0">Enter Your Voting Key</h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="form-floating mb-4">
+                                <input type="text" class="form-control form-control-lg" 
+                                       id="voterKeyInput" placeholder="Voter Key" maxlength="10" 
+                                       style="font-family: monospace; font-size: 1.2rem; letter-spacing: 2px;">
+                                <label for="voterKeyInput">Voter Key</label>
+                            </div>
+                            <button class="btn btn-primary btn-lg w-100" id="authenticateBtn">
+                                Start Voting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2: Voting Interface -->
+        <div id="votingPhase" class="fade-in d-none">
+            <!-- Voting Header -->
+            <div class="voting-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 id="pollTitle" class="h3 mb-1">Loading...</h2>
+                        <p id="pollDescription" class="mb-0 opacity-75">Loading...</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="voter-info mb-2">
+                            <small>Voter ID: <strong id="displayVoterKey">-</strong></small>
+                        </div>
+                        <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects List -->
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="mb-3">
+                        <i class="bi bi-list-check"></i> Subjects to Vote On
+                        <small class="text-muted">(<span id="votedCount">0</span>/<span id="totalCount">0</span> completed)</small>
+                    </h4>
+                    
+                    <div id="subjectsList" class="row">
+                        <!-- Subject cards will be rendered here -->
+                    </div>
+                    
+                    <div id="emptySubjectsMessage" class="text-center py-4 d-none">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted">No subjects available for voting</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voting Modal -->
+    <div class="modal fade" id="votingModal" tabindex="-1" aria-labelledby="votingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="votingModalLabel">
+                        <i class="bi bi-pencil-square"></i> Vote on: <span id="modalSubjectName">Subject</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="votingForm">
+                        <!-- Dynamic form content will be generated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="submitVoteBtn">
+                        <i class="bi bi-check-circle"></i> Submit Vote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Toast Notifications -->
+    <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <!-- Toasts will be dynamically added here -->
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmationModalLabel">
+                        <i class="bi bi-question-circle"></i> Confirm Action
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmationMessage">Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmActionBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/crypto-utils.js"></script>
+    <script src="js/voting-app.js"></script>
+</body>
+</html>

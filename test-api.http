@@ -1,0 +1,69 @@
+# Variables for testing
+@baseUrl = http://localhost:3000
+@storageHash = 359a594c9ab2eeeadaa684de310b178651cf6fc219d1ca2b249dfae3adc2b203
+@masterHash = 95c66f8e4557dedf7b0ede57b3e866c0c766a7d26a7bc025011476b67b5acc33
+@voterHash1 = 1ecdd1602312a80ef6ffd2fa7e746c4364e24baf93cac54b2597e27970231ad8
+@voterHash2 = 9cb3022b8d5bc6d1255ed56ec0d3cbe22a26a3042d6ee4246a009245d057c3a9
+
+### Health Check
+GET {{baseUrl}}/api/health
+
+### 1. Update poll configuration (creates session if doesn't exist)
+PUT {{baseUrl}}/api/data/{{storageHash}}/config
+Content-Type: application/json
+X-Master-Hash: {{masterHash}}
+
+{
+  "encryptedConfig": "encrypted_poll_config_blob_here"
+}
+
+### 2. Get poll configuration (public - no auth needed)
+GET {{baseUrl}}/api/data/{{storageHash}}/config
+
+### 3. Submit vote as voter 1
+PUT {{baseUrl}}/api/vote/{{storageHash}}/{{voterHash1}}
+Content-Type: application/json
+
+{
+  "encryptedVote": "encrypted_vote_blob_here"
+}
+
+### 4. Submit another vote as voter 1 (creates new timestamped file)
+PUT {{baseUrl}}/api/vote/{{storageHash}}/{{voterHash1}}
+Content-Type: application/json
+
+{
+  "encryptedVote": "updated_encrypted_vote_blob_here"
+}
+
+### 5. Submit vote as voter 2
+PUT {{baseUrl}}/api/vote/{{storageHash}}/{{voterHash2}}
+Content-Type: application/json
+
+{
+  "encryptedVote": "voter2_encrypted_vote_blob_here"
+}
+
+### 6. Get all votes (master only)
+GET {{baseUrl}}/api/data/{{storageHash}}/votes
+X-Master-Hash: {{masterHash}}
+
+### Error test: Try to get votes without master hash (should fail)
+GET {{baseUrl}}/api/data/{{storageHash}}/votes
+
+### Error test: Try to update config with wrong master hash (should fail)
+PUT {{baseUrl}}/api/data/{{storageHash}}/config
+Content-Type: application/json
+X-Master-Hash: wrong_hash
+
+{
+  "encryptedConfig": "this_should_fail"
+}
+
+### Error test: Try to vote without encrypted vote (should fail)
+PUT {{baseUrl}}/api/vote/{{storageHash}}/{{voterHash1}}
+Content-Type: application/json
+
+{
+  "wrongField": "should_fail"
+}

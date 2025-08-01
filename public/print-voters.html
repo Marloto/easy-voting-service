@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Voter Keys</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+        }
+
+        .print-container {
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .voter-card {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            break-inside: avoid;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .voter-card.single {
+            border-left: 4px solid #28a745;
+        }
+
+        .voter-card.group {
+            border-left: 4px solid #fd7e14;
+        }
+
+        .voter-card.add-more {
+            border: 2px dashed #6c757d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .voter-card.add-more:hover {
+            border-color: #6c757d;
+            background-color: rgba(108, 117, 125, 0.05);
+        }
+
+        .voter-card.add-more .voter-qr {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+
+        .voter-card.add-more .voter-type {
+            color: #6c757d;
+        }
+
+        .voter-card.add-more .voter-key {
+            color: #6c757d;
+        }
+
+        .voter-qr {
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voter-qr canvas {
+            max-width: 80px;
+            max-height: 80px;
+        }
+
+        .voter-info {
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .voter-key {
+            font-family: 'Courier New', monospace;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #495057;
+            letter-spacing: 2px;
+            margin: 5px 0;
+        }
+
+        .voter-type {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .voter-type.single {
+            color: #28a745;
+        }
+
+        .voter-type.group {
+            color: #fd7e14;
+        }
+
+        .section-instructions {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .columns {
+            columns: 2;
+            column-gap: 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .session-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .section-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 30px 0 15px 0;
+            color: #495057;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+
+        .no-print {
+            /* No special styling needed for screen view */
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .print-container {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+                background: white;
+                box-shadow: none;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .voter-card.add-more {
+                display: none !important;
+            }
+            
+            .columns {
+                columns: 2;
+                column-gap: 15px;
+            }
+            
+            .voter-card {
+                margin-bottom: 10px;
+                padding: 12px;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="controls no-print">
+        <button class="btn btn-primary me-2" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <button class="btn btn-secondary" onclick="window.close()">
+            <i class="bi bi-x-circle"></i> Close
+        </button>
+    </div>
+
+    <div class="print-container">
+        <div class="page-header">
+            <h1>Voter Keys</h1>
+            <div class="session-info">
+                <strong>Session ID:</strong> <span id="sessionIdDisplay">Loading...</span><br>
+                <strong>Poll:</strong> <span id="pollTitleDisplay">Loading...</span>
+            </div>
+        </div>
+
+        <div id="singleVotersSection">
+            <div class="section-header">
+                <i class="bi bi-person-circle text-success"></i> Single Voter Keys
+            </div>
+            <div class="section-instructions">
+                <strong><i class="bi bi-info-circle"></i> Instructions:</strong>
+                Hand each key to exactly <strong>one person</strong>. Each voter can scan the QR code or visit the voting URL and enter their unique key.
+            </div>
+            <div class="columns" id="singleVotersList">
+                <!-- Single voter keys will be generated here -->
+            </div>
+        </div>
+
+        <div id="groupVotersSection" class="d-none">
+            <div class="section-header page-break">
+                <i class="bi bi-people-fill text-warning"></i> Group Voter Keys
+            </div>
+            <div class="section-instructions">
+                <strong><i class="bi bi-info-circle"></i> Instructions:</strong>
+                These keys can be <strong>shared with multiple people</strong>. Each person can scan the QR code or visit the voting URL and use the same group key to vote.
+            </div>
+            <div class="columns" id="groupVotersList">
+                <!-- Group voter keys will be generated here -->
+            </div>
+        </div>
+
+        <div id="emptyMessage" class="text-center text-muted py-5">
+            <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+            <h3>No Voter Keys Found</h3>
+            <p>Please configure voter keys in the main configuration page first.</p>
+        </div>
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/qrcode.min.js"></script>
+    <script src="js/crypto-utils.js"></script>
+    <script>
+        class PrintVotersApp {
+            constructor() {
+                this.sessionId = null;
+                this.pollTitle = null;
+                this.voters = [];
+                this.groupCounters = {}; // Track how many copies of each group key
+                this.votingUrl = null;
+                this.init();
+            }
+
+            init() {
+                this.parseURLData();
+                this.generateVotingUrl();
+                this.renderVoters();
+            }
+
+            generateVotingUrl() {
+                if (this.sessionId) {
+                    this.votingUrl = `${window.location.origin}${window.location.pathname.replace('print-voters.html', 'voting.html')}#${this.sessionId}`;
+                }
+            }
+
+            parseURLData() {
+                const fragment = window.location.hash.substring(1);
+                
+                if (!fragment) {
+                    this.showError('No voter data found in URL');
+                    return;
+                }
+
+                try {
+                    const decodedData = JSON.parse(atob(fragment));
+                    
+                    if (decodedData.sessionId && decodedData.voters) {
+                        this.sessionId = decodedData.sessionId;
+                        this.pollTitle = decodedData.pollTitle || 'Untitled Poll';
+                        this.voters = decodedData.voters;
+                        
+                        // Initialize group counters
+                        this.voters.forEach(voter => {
+                            if (voter.type === 'group') {
+                                this.groupCounters[voter.id] = 1; // Start with 1 copy
+                            }
+                        });
+                        
+                        console.log('Parsed voter data:', {
+                            sessionId: this.sessionId,
+                            pollTitle: this.pollTitle,
+                            votersCount: this.voters.length
+                        });
+                    } else {
+                        throw new Error('Invalid data structure');
+                    }
+                } catch (error) {
+                    console.error('Error parsing URL data:', error);
+                    this.showError('Invalid voter keys data');
+                }
+            }
+
+            renderVoters() {
+                if (!this.voters || this.voters.length === 0) {
+                    document.getElementById('emptyMessage').classList.remove('d-none');
+                    return;
+                }
+
+                // Update session info
+                document.getElementById('sessionIdDisplay').textContent = this.sessionId;
+                document.getElementById('pollTitleDisplay').textContent = this.pollTitle;
+                document.getElementById('emptyMessage').classList.add('d-none');
+
+                // Separate single and group voters
+                const singleVoters = this.voters.filter(v => v.type === 'single' || !v.type);
+                const groupVoters = this.voters.filter(v => v.type === 'group');
+
+                // Render single voters
+                this.renderSingleVoters(singleVoters);
+
+                // Render group voters if any exist
+                if (groupVoters.length > 0) {
+                    this.renderGroupVoters(groupVoters);
+                    document.getElementById('groupVotersSection').classList.remove('d-none');
+                }
+            }
+
+            renderSingleVoters(singleVoters) {
+                const container = document.getElementById('singleVotersList');
+                container.innerHTML = '';
+
+                singleVoters.forEach(voter => {
+                    container.appendChild(this.createVoterCard(voter, 'single'));
+                });
+
+                if (singleVoters.length === 0) {
+                    document.getElementById('singleVotersSection').classList.add('d-none');
+                }
+            }
+
+            renderGroupVoters(groupVoters) {
+                const container = document.getElementById('groupVotersList');
+                container.innerHTML = '';
+
+                groupVoters.forEach(voter => {
+                    // Render the number of copies for this group key
+                    const copies = this.groupCounters[voter.id] || 1;
+                    
+                    for (let i = 0; i < copies; i++) {
+                        container.appendChild(this.createVoterCard(voter, 'group'));
+                    }
+                    
+                    // Add the "+" card to add more copies
+                    container.appendChild(this.createAddMoreCard(voter));
+                });
+            }
+
+            createVoterCard(voter, type) {
+                const div = document.createElement('div');
+                div.className = `voter-card ${type}`;
+                
+                const typeLabel = type === 'single' ? 'Single Voter' : 'Group Voter';
+                const qrId = `qr-${voter.id}_${Math.random().toString(36).substr(2, 9)}`;
+
+                div.innerHTML = `
+                    <div class="voter-qr" id="${qrId}">
+                        <!-- QR code will be generated here -->
+                    </div>
+                    <div class="voter-info">
+                        <div class="voter-type ${type}">${typeLabel}</div>
+                        <div class="voter-key">${voter.id}</div>
+                    </div>
+                `;
+
+                // Generate QR code after the element is added to DOM
+                setTimeout(() => {
+                    this.generateQRCode(qrId, this.votingUrl);
+                }, 10);
+
+                return div;
+            }
+
+            generateQRCode(containerId, url) {
+                const container = document.getElementById(containerId);
+                if (container && url && typeof QRCode !== 'undefined') {
+                    try {
+                        // Clear any existing content
+                        container.innerHTML = '';
+                        
+                        new QRCode(container, {
+                            text: url,
+                            width: 80,
+                            height: 80,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    } catch (error) {
+                        console.error('Failed to generate QR code:', error);
+                        container.innerHTML = '<small class="text-muted">QR Error</small>';
+                    }
+                }
+            }
+
+            createAddMoreCard(voter) {
+                const div = document.createElement('div');
+                div.className = 'voter-card add-more no-print';
+                div.onclick = () => this.addMoreGroupKeys(voter.id);
+                
+                div.innerHTML = `
+                    <div class="voter-qr">
+                        <i class="bi bi-plus-circle" style="font-size: 2rem; color: #6c757d;"></i>
+                    </div>
+                    <div class="voter-info">
+                        <div class="voter-type">Group Key Copies</div>
+                        <div class="voter-key">Add More</div>
+                    </div>
+                `;
+
+                return div;
+            }
+
+            addMoreGroupKeys(voterId) {
+                this.groupCounters[voterId] = (this.groupCounters[voterId] || 1) + 1;
+                
+                // Re-render group voters to show the new copy
+                const groupVoters = this.voters.filter(v => v.type === 'group');
+                this.renderGroupVoters(groupVoters);
+            }
+
+            showError(message) {
+                document.getElementById('emptyMessage').innerHTML = `
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h3 class="text-danger">Error</h3>
+                    <p>${message}</p>
+                `;
+                document.getElementById('emptyMessage').classList.remove('d-none');
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new PrintVotersApp();
+        });
+    </script>
+</body>
+</html>
