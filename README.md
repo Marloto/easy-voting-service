@@ -22,6 +22,9 @@ A secure, zero-knowledge voting system with client-side encryption and anonymous
 
 </div>
 
+> **Note:**  
+> This project was generated with the assistance of coding agents and AI-based development tools.
+
 ## Quick Start
 
 ### Prerequisites
