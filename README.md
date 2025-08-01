@@ -51,7 +51,7 @@ A secure, zero-knowledge voting system with client-side encryption and anonymous
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/easy-voting-service.git
+   git clone https://github.com/Marloto/easy-voting-service.git
    cd easy-voting-service
    ```
 
@@ -86,7 +86,7 @@ version: '3.8'
 
 services:
   easy-voting-service:
-    image: ghcr.io/your-username/easy-voting-service:latest
+    image: ghcr.io/Marloto/easy-voting-service:latest
     container_name: easy-voting-service
     ports:
       - "3000:3000"
@@ -111,7 +111,7 @@ docker-compose up -d
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/easy-voting-service.git
+   git clone https://github.com/Marloto/easy-voting-service.git
    cd easy-voting-service
    ```
 
@@ -131,7 +131,7 @@ docker run -d \
   --name easy-voting-service \
   -p 3000:3000 \
   -v voting_data:/app/data \
-  ghcr.io/your-username/easy-voting-service:latest
+  ghcr.io/Marloto/easy-voting-service:latest
 ```
 
 **Building from source:**
