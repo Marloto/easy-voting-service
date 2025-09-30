@@ -1265,7 +1265,7 @@ class ConfigApp {
             const storageHash = await CryptoUtils.sha256(session.sessionId);
             const masterHash = await CryptoUtils.sha256(session.masterKey);
             
-            const response = await fetch(`/api/data/${storageHash}/votes/bulk`, {
+            const response = await fetch(`api/data/${storageHash}/votes/bulk`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1505,7 +1505,7 @@ class ConfigApp {
                 const masterHash = await CryptoUtils.sha256(session.masterKey);
                 
                 try {
-                    const response = await fetch(`/api/data/${storageHash}/votes`, {
+                    const response = await fetch(`api/data/${storageHash}/votes`, {
                         headers: {
                             'X-Master-Hash': masterHash
                         }
@@ -1579,7 +1579,7 @@ class ConfigApp {
             const masterHash = await CryptoUtils.sha256(session.masterKey);
             
             try {
-                const response = await fetch(`/api/data/${storageHash}/votes`, {
+                const response = await fetch(`api/data/${storageHash}/votes`, {
                     headers: {
                         'X-Master-Hash': masterHash
                     }
@@ -1698,7 +1698,7 @@ class ConfigApp {
                 const storageHash = await CryptoUtils.sha256(session.sessionId);
                 const masterHash = await CryptoUtils.sha256(session.masterKey);
                 
-                const response = await fetch(`/api/data/${storageHash}/clear`, {
+                const response = await fetch(`api/data/${storageHash}/clear`, {
                     method: 'DELETE',
                     headers: {
                         'X-Master-Hash': masterHash

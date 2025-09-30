@@ -284,7 +284,7 @@ class VotingApp {
         try {
             const storageHash = await CryptoUtils.sha256(this.sessionId);
             // Load public config (without voter hashes for security)
-            const response = await fetch(`/api/data/${storageHash}/config`);
+            const response = await fetch(`api/data/${storageHash}/config`);
             
             if (response.ok) {
                 const configData = await response.json();
@@ -322,7 +322,7 @@ class VotingApp {
             console.log('Checking voter authorization server-side...');
             
             // Server-side authorization check
-            const response = await fetch(`/api/data/${storageHash}/voter/auth`, {
+            const response = await fetch(`api/data/${storageHash}/voter/auth`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -675,7 +675,7 @@ class VotingApp {
             
             // Submit to backend
             const storageHash = await CryptoUtils.sha256(this.sessionId);
-            const response = await fetch(`/api/vote/${storageHash}/${this.voterHash}`, {
+            const response = await fetch(`api/vote/${storageHash}/${this.voterHash}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'

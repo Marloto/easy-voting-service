@@ -148,7 +148,7 @@ class ResultsApp {
     async loadPollConfig() {
         try {
             // Load full config with voter hashes (requires master key)
-            const response = await fetch(`/api/data/${this.storageHash}/config`, {
+            const response = await fetch(`api/data/${this.storageHash}/config`, {
                 headers: {
                     'X-Master-Hash': this.masterHash
                 }
@@ -184,7 +184,7 @@ class ResultsApp {
     
     async loadVotes() {
         try {
-            const response = await fetch(`/api/data/${this.storageHash}/votes`, {
+            const response = await fetch(`api/data/${this.storageHash}/votes`, {
                 headers: {
                     'X-Master-Hash': this.masterHash
                 }

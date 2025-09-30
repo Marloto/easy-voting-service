@@ -233,7 +233,7 @@ class ConfigStateManager {
             });
             
             // Send to server with voter hashes stored separately
-            const response = await fetch(`/api/data/${this.session.storageHash}/config`, {
+            const response = await fetch(`api/data/${this.session.storageHash}/config`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ class ConfigStateManager {
         }
         
         try {
-            const response = await fetch(`/api/data/${this.session.storageHash}/config`);
+            const response = await fetch(`api/data/${this.session.storageHash}/config`);
             
             if (response.ok) {
                 const configData = await response.json();
